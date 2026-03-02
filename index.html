@@ -69,6 +69,9 @@
     .brand h1{margin:0;font-size:14px;letter-spacing:.2px}
     .brand p{margin:2px 0 0 0;font-size:12px;color:var(--muted)}
     .actions{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    .actionsMain, .actionsMore{display:contents;}
+    .actionsMore.hidden{display:none;}
+    .btn.more{border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.05);}
     .btn{
       appearance:none;
       border:1px solid var(--stroke);
@@ -360,6 +363,12 @@
     .toast.show{display:flex}
     .dot{width:10px;height:10px;border-radius:999px;background:var(--ok)}
 
+    /* Desktop header behavior */
+    @media (min-width: 721px){
+      #btnMore{display:none;}
+      .actionsMore{display:contents !important;}
+    }
+
     @media (max-width: 1100px){
       .app{grid-template-columns: 1fr; grid-template-rows: auto auto auto auto}
       .pitchArea{min-height:640px}
@@ -378,8 +387,17 @@
       .brand{ min-width:0; }
       .brand h1{ font-size:14px; }
       .brand p{ font-size:11px; }
-      .actions{ width:100%; justify-content:space-between; }
-      .actions .btn{ flex:1 1 140px; justify-content:center; }
+      /* Compact header on mobile */
+      .brand p{ display:none; }
+      .topbar{ padding:10px 10px; }
+      .logo{ width:30px; height:30px; border-radius:11px; }
+      .brand h1{ font-size:13px; }
+      .actions{ width:100%; justify-content:stretch; }
+      .actionsMain{ display:grid; grid-template-columns: 1fr 1fr auto; gap:8px; }
+      .actionsMore{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+      .actionsMore.hidden{ display:none; }
+      #btnMore{ width:56px; padding:10px 0; }
+      .actions .btn{ padding:10px 10px; }
       .rosterTools{ flex-direction:column; align-items:stretch; }
       .rosterList{ max-height: 45vh; overflow:auto; }
       .pitchArea{ min-height: 520px; }
@@ -476,12 +494,17 @@
         </div>
       </div>
       <div class="actions">
-        <button class="btn primary" id="btnAdd">＋ Añadir</button>
-        <button class="btn ok" id="btnSave">Guardar</button>
-        <button class="btn" id="btnLoad">Cargar</button>
-        <button class="btn warn" id="btnExport">Exportar</button>
-        <button class="btn" id="btnImport">Importar</button>
-        <button class="btn bad" id="btnReset">Reset</button>
+        <div class="actionsMain">
+          <button class="btn primary" id="btnAdd">＋ Añadir</button>
+          <button class="btn ok" id="btnSave">Guardar</button>
+          <button class="btn more" id="btnMore" title="Más acciones" aria-expanded="false">⋯</button>
+        </div>
+        <div class="actionsMore hidden" id="moreMenu">
+          <button class="btn" id="btnLoad">Cargar</button>
+          <button class="btn warn" id="btnExport">Exportar</button>
+          <button class="btn" id="btnImport">Importar</button>
+          <button class="btn bad" id="btnReset">Reset</button>
+        </div>
       </div>
     </header>
 
@@ -1133,6 +1156,21 @@
       $("btnLoad").addEventListener("click", loadLS);
       $("btnExport").addEventListener("click", exportJSON);
       $("btnImport").addEventListener("click", importJSON);
+      // Mobile: more actions menu
+      const moreBtn = $("btnMore");
+      const moreMenu = $("moreMenu");
+      function setMore(open){
+        const isOpen = !!open;
+        moreMenu.classList.toggle("hidden", !isOpen);
+        moreBtn.setAttribute("aria-expanded", String(isOpen));
+      }
+      moreBtn.addEventListener("click", (ev)=>{
+        ev.stopPropagation();
+        setMore(moreMenu.classList.contains("hidden"));
+      });
+      document.addEventListener("click", ()=> setMore(false));
+      moreMenu.addEventListener("click", (ev)=> ev.stopPropagation());
+
       $("btnReset").addEventListener("click", ()=>{
         if(confirm("¿Resetear? Se borrará el guardado local.")) resetAll();
       });
