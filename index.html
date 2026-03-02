@@ -364,7 +364,36 @@
       .app{grid-template-columns: 1fr; grid-template-rows: auto auto auto auto}
       .pitchArea{min-height:640px}
     }
-  </style>
+  
+
+    @media (max-width: 720px){
+      body{ overflow:auto; }
+      .app{ padding:10px; gap:10px; }
+      .topbar{
+        position:sticky; top:0; z-index:60;
+        flex-direction:column;
+        align-items:stretch;
+        gap:10px;
+      }
+      .brand{ min-width:0; }
+      .brand h1{ font-size:14px; }
+      .brand p{ font-size:11px; }
+      .actions{ width:100%; justify-content:space-between; }
+      .actions .btn{ flex:1 1 140px; justify-content:center; }
+      .rosterTools{ flex-direction:column; align-items:stretch; }
+      .rosterList{ max-height: 45vh; overflow:auto; }
+      .pitchArea{ min-height: 520px; }
+      .zones{ grid-template-columns: repeat(2, 1fr); inset:18px; gap:10px; }
+      .zone{ min-height: 140px; }
+      .staffBar{ grid-template-columns: 1fr; }
+      .editorBody{ max-height: 55vh; overflow:auto; }
+      .grid{ grid-template-columns: 1fr; }
+      .btn{ padding:10px 10px; }
+      .card{ padding:12px; }
+      .mini{ padding:10px; }
+    }
+
+</style>
 </head>
 <body>
   <div class="app">
@@ -1059,6 +1088,14 @@
     window.addEventListener("DOMContentLoaded", ()=>{
       setupZones();
       setupUI();
+
+      // Mobile/touch: drag & drop is unreliable. Default to locked moves (you can toggle it).
+      try{
+        const isTouch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
+        const isSmall = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
+        if(isTouch || isSmall) setLock(true, true);
+      }catch(_){ }
+
       loadLS();
     });
   </script>
