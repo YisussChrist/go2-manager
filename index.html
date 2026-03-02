@@ -279,13 +279,48 @@
     .miniRight{display:flex; gap:6px}
 
     /* Staff bench */
-    .staffBar{
+    .staffHeaderRow{
       border-top:1px solid var(--stroke);
-      background: rgba(0,0,0,.18);
-      padding:10px;
-      display:grid;
-      grid-template-columns: 1fr 1fr;
+      background: rgba(0,0,0,.14);
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
       gap:10px;
+    }
+    .staffTitle{
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+    .staffHint{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:800;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.22);
+      white-space:nowrap;
+    }
+    .staffCarousel{
+      background: rgba(0,0,0,.18);
+      padding:10px 10px 12px 10px;
+      display:flex;
+      gap:12px;
+      overflow-x:auto;
+      scroll-snap-type:x mandatory;
+      -webkit-overflow-scrolling: touch;
+      border-top:1px solid rgba(255,255,255,.08);
+    }
+    .staffCarousel::-webkit-scrollbar{ height:10px; }
+    .staffCarousel::-webkit-scrollbar-thumb{
+      background: rgba(124,92,255,.35);
+      border-radius:999px;
+      border:2px solid rgba(0,0,0,.25);
+    }
+    .staffPane{
+      scroll-snap-align:start;
+      flex:0 0 88%;
     }
     .staffZone{
       border:1px dashed rgba(255,255,255,.22);
@@ -476,7 +511,8 @@
       .mobileNav{ display:flex; }
       /* show one page at a time on mobile */
       #pageRoster, #pagePitch, #pageEditor{ display:none; }
-      #pageRoster.activePage, #pagePitch.activePage, #pageEditor.activePage{ display:flex; flex-direction:column; }
+      #pageRoster.activePage, #pagePitch.activePage, #pageEditor.activePage{ display:flex; flex-direction:column; padding-bottom: 96px; }
+      /* keep content above bottom nav */
       /* make Pitch page feel like the main screen */
       .pitchArea{ min-height: 420px; }
     }
@@ -485,6 +521,8 @@
     /* Touch drag helper (iOS Safari) */
     @media (hover:none) and (pointer:coarse){
       .card, .mini{ touch-action:none; }
+      .staffCarousel{ touch-action: pan-x; }
+      .pitchArea{ touch-action: pan-y; }
     }
 
       body.dragging{ overscroll-behavior:none; }
@@ -572,19 +610,26 @@
         </div>
       </div>
 
-      <div class="staffBar">
-        <div class="staffZone" data-zone="MN">
+      <div class="staffHeaderRow">
+        <div class="staffTitle">Staff técnico</div>
+        <div class="staffHint">Desliza ◀▶</div>
+      </div>
+
+      <div class="staffCarousel" id="staffCarousel" aria-label="Staff técnico (deslizable)">
+        <div class="staffPane staffZone" data-zone="MN">
           <div class="zoneTitle"><b>Manager</b><span class="count" id="countMN">0</span></div>
           <div class="slot" id="slotMN"></div>
           <div class="dropHint">Suelta para <b>Manager</b></div>
         </div>
-        <div class="staffZone" data-zone="GR">
+
+        <div class="staffPane staffZone" data-zone="GR">
           <div class="zoneTitle"><b>Gerente</b><span class="count" id="countGR">0</span></div>
           <div class="slot" id="slotGR"></div>
           <div class="dropHint">Suelta para <b>Gerente</b></div>
         </div>
       </div>
     </section>
+
 
     <!-- Right: Editor -->
     <aside class="panel" id="pageEditor">
