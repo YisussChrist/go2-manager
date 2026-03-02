@@ -393,6 +393,76 @@
       .mini{ padding:10px; }
     }
 
+
+    /* =========================
+       Mobile App Nav (Inazuma vibe)
+       ========================= */
+    .mobileNav{
+      display:none;
+      position:fixed;
+      left:12px; right:12px;
+      bottom:12px;
+      z-index:50;
+      border-radius:18px;
+      padding:10px;
+      gap:10px;
+      background: linear-gradient(180deg, rgba(20,24,38,.92), rgba(10,12,20,.92));
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: 0 18px 50px rgba(0,0,0,.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .mTab{
+      flex:1;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      color: rgba(255,255,255,.92);
+      border-radius:16px;
+      padding:10px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      font-weight:900;
+      letter-spacing:.2px;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      position:relative;
+      overflow:hidden;
+    }
+    .mTab .ico{ font-size:18px; line-height:1; }
+    .mTab .lbl{ font-size:12px; }
+    .mTab:hover{ transform: translateY(-1px); background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); }
+    .mTab:active{ transform: translateY(0); }
+    .mTab.active{
+      background: linear-gradient(135deg, rgba(124,92,255,.35), rgba(56,211,159,.18));
+      border-color: rgba(124,92,255,.45);
+      box-shadow: 0 0 0 6px rgba(124,92,255,.10);
+    }
+    .mTab.active:after{
+      content:"";
+      position:absolute;
+      inset:-60%;
+      background: linear-gradient(120deg, transparent 0 40%, rgba(255,255,255,.20) 50%, transparent 60% 100%);
+      transform: rotate(18deg);
+      animation: sheen2 4.8s linear infinite;
+      pointer-events:none;
+    }
+    @keyframes sheen2{ to{ transform: rotate(18deg) translateX(70%);} }
+
+
+    @media (max-width: 900px){
+      body{ overflow:auto; }
+      .app{ padding-bottom: 96px; }
+      .mobileNav{ display:flex; }
+      /* show one page at a time on mobile */
+      #pageRoster, #pagePitch, #pageEditor{ display:none; }
+      #pageRoster.activePage, #pagePitch.activePage, #pageEditor.activePage{ display:flex; flex-direction:column; }
+      /* make Pitch page feel like the main screen */
+      .pitchArea{ min-height: 420px; }
+    }
+
 </style>
 </head>
 <body>
@@ -416,7 +486,7 @@
     </header>
 
     <!-- Left: Roster -->
-    <section class="panel">
+    <section class="panel" id="pageRoster">
       <div class="head">
         <div>
           <h2>Roster</h2>
@@ -432,7 +502,7 @@
     </section>
 
     <!-- Middle: Pitch + Staff -->
-    <section class="panel pitchWrap">
+    <section class="panel pitchWrap" id="pagePitch">
       <div class="head">
         <div>
           <h2>Campo</h2>
@@ -486,7 +556,7 @@
     </section>
 
     <!-- Right: Editor -->
-    <aside class="panel">
+    <aside class="panel" id="pageEditor">
       <div class="head">
         <div>
           <h2>Editor</h2>
@@ -585,6 +655,20 @@
       </div>
     </aside>
   </div>
+
+  <!-- Mobile Bottom Nav -->
+  <nav class="mobileNav" aria-label="Navegación móvil">
+    <button class="mTab" data-tab="Roster" id="tabRoster" type="button">
+      <span class="ico">🧍</span><span class="lbl">Roster</span>
+    </button>
+    <button class="mTab" data-tab="Pitch" id="tabPitch" type="button">
+      <span class="ico">⚽</span><span class="lbl">Campo</span>
+    </button>
+    <button class="mTab" data-tab="Editor" id="tabEditor" type="button">
+      <span class="ico">🛠️</span><span class="lbl">Editor</span>
+    </button>
+  </nav>
+
 
   <div class="toast" id="toast" role="status" aria-live="polite">
     <span class="dot"></span>
@@ -1085,9 +1169,69 @@
       });
     }
 
+
+    function setupMobileTabs(){
+      const nav = document.querySelector(".mobileNav");
+      if(!nav) return;
+
+      const pages = {
+        Roster: $("pageRoster"),
+        Pitch: $("pagePitch"),
+        Editor: $("pageEditor"),
+      };
+      const tabs = {
+        Roster: $("tabRoster"),
+        Pitch: $("tabPitch"),
+        Editor: $("tabEditor"),
+      };
+
+      function apply(tab){
+        // Only apply on small screens where nav is visible
+        const isMobile = window.matchMedia && window.matchMedia("(max-width: 900px)").matches;
+        if(!isMobile) {
+          // ensure desktop shows all
+          Object.values(pages).forEach(p=>p && p.classList.remove("activePage"));
+          Object.values(tabs).forEach(t=>t && t.classList.remove("active"));
+          return;
+        }
+
+        Object.entries(pages).forEach(([k,el])=>{
+          if(!el) return;
+          el.classList.toggle("activePage", k===tab);
+        });
+        Object.entries(tabs).forEach(([k,el])=>{
+          if(!el) return;
+          el.classList.toggle("active", k===tab);
+        });
+
+        try{ sessionStorage.setItem("go2_mobile_tab", tab); }catch(_){}
+      }
+
+      // Click handlers
+      Object.entries(tabs).forEach(([k,btn])=>{
+        if(!btn) return;
+        btn.addEventListener("click", ()=>apply(k));
+      });
+
+      // Default tab
+      let start = "Pitch";
+      try{
+        const saved = sessionStorage.getItem("go2_mobile_tab");
+        if(saved && pages[saved]) start = saved;
+      }catch(_){}
+
+      // Apply now + on resize/orientation change
+      apply(start);
+      window.addEventListener("resize", ()=>apply(start));
+      window.addEventListener("orientationchange", ()=>apply(start));
+    }
+
     window.addEventListener("DOMContentLoaded", ()=>{
       setupZones();
       setupUI();
+
+      // Mobile app navigation (tabs)
+      setupMobileTabs();
 
       // Mobile/touch: drag & drop is unreliable. Default to locked moves (you can toggle it).
       try{
