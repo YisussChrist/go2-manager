@@ -279,48 +279,13 @@
     .miniRight{display:flex; gap:6px}
 
     /* Staff bench */
-    .staffHeaderRow{
+    .staffBar{
       border-top:1px solid var(--stroke);
-      background: rgba(0,0,0,.14);
-      padding:10px 12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .staffTitle{
-      font-weight:900;
-      letter-spacing:.2px;
-    }
-    .staffHint{
-      color:var(--muted);
-      font-size:12px;
-      font-weight:800;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.16);
-      background: rgba(0,0,0,.22);
-      white-space:nowrap;
-    }
-    .staffCarousel{
       background: rgba(0,0,0,.18);
-      padding:10px 10px 12px 10px;
-      display:flex;
-      gap:12px;
-      overflow-x:auto;
-      scroll-snap-type:x mandatory;
-      -webkit-overflow-scrolling: touch;
-      border-top:1px solid rgba(255,255,255,.08);
-    }
-    .staffCarousel::-webkit-scrollbar{ height:10px; }
-    .staffCarousel::-webkit-scrollbar-thumb{
-      background: rgba(124,92,255,.35);
-      border-radius:999px;
-      border:2px solid rgba(0,0,0,.25);
-    }
-    .staffPane{
-      scroll-snap-align:start;
-      flex:0 0 88%;
+      padding:10px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
     }
     .staffZone{
       border:1px dashed rgba(255,255,255,.22);
@@ -404,7 +369,47 @@
       .actionsMore{display:contents !important;}
     }
 
-    @media (max-width: 1100px){
+    
+    /* Pitch view tabs (mobile) */
+    .fieldTabs{
+      display:none;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    @media (max-width: 860px){
+      .fieldTabs{ display:flex; }
+    }
+    .fieldTab{
+      flex:1;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      color: rgba(255,255,255,.86);
+      padding:10px 12px;
+      font-weight:900;
+      letter-spacing:.2px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .fieldTab.on{
+      border-color: rgba(124,92,255,.55);
+      box-shadow: 0 0 0 4px rgba(124,92,255,.10);
+      background: linear-gradient(135deg, rgba(124,92,255,.22), rgba(0,0,0,.18));
+    }
+
+    /* Ensure staff not hidden by bottom nav on mobile */
+    #viewStaff{ padding-bottom: 86px; }
+    #viewPitch{ padding-bottom: 10px; }
+
+    /* Desktop: show both pitch + staff, hide tabs */
+    @media (min-width: 861px){
+      .fieldTabs{ display:none !important; }
+      #viewPitch{ display:block !important; }
+      #viewStaff{ display:block !important; padding-bottom: 0 !important; }
+    }
+
+@media (max-width: 1100px){
       .app{grid-template-columns: 1fr; grid-template-rows: auto auto auto auto}
       .pitchArea{min-height:640px}
     }
@@ -511,8 +516,7 @@
       .mobileNav{ display:flex; }
       /* show one page at a time on mobile */
       #pageRoster, #pagePitch, #pageEditor{ display:none; }
-      #pageRoster.activePage, #pagePitch.activePage, #pageEditor.activePage{ display:flex; flex-direction:column; padding-bottom: 96px; }
-      /* keep content above bottom nav */
+      #pageRoster.activePage, #pagePitch.activePage, #pageEditor.activePage{ display:flex; flex-direction:column; }
       /* make Pitch page feel like the main screen */
       .pitchArea{ min-height: 420px; }
     }
@@ -521,8 +525,6 @@
     /* Touch drag helper (iOS Safari) */
     @media (hover:none) and (pointer:coarse){
       .card, .mini{ touch-action:none; }
-      .staffCarousel{ touch-action: pan-x; }
-      .pitchArea{ touch-action: pan-y; }
     }
 
       body.dragging{ overscroll-behavior:none; }
@@ -576,10 +578,15 @@
         <div>
           <h2>Campo</h2>
           <div class="sub">Suelta un personaje en una zona para asignarlo. Para staff, usa el banquillo de abajo.</div>
+          <div class="fieldTabs" role="tablist" aria-label="Vista de Campo o Staff">
+            <button class="fieldTab on" id="btnViewPitch" type="button" role="tab" aria-selected="true">⚽ Campo</button>
+            <button class="fieldTab" id="btnViewStaff" type="button" role="tab" aria-selected="false">🧑‍💼 Staff</button>
+          </div>
         </div>
         <span class="pill" id="hintPill">Arrastrar: ON</span>
       </div>
 
+      <div id="viewPitch">
       <div class="pitchArea" id="pitch">
         <div class="pitch">
           <div class="midLine"></div>
@@ -609,27 +616,23 @@
           </div>
         </div>
       </div>
-
-      <div class="staffHeaderRow">
-        <div class="staffTitle">Staff técnico</div>
-        <div class="staffHint">Desliza ◀▶</div>
       </div>
 
-      <div class="staffCarousel" id="staffCarousel" aria-label="Staff técnico (deslizable)">
-        <div class="staffPane staffZone" data-zone="MN">
+      <div id="viewStaff" style="display:none;">
+      <div class="staffBar">
+        <div class="staffZone" data-zone="MN">
           <div class="zoneTitle"><b>Manager</b><span class="count" id="countMN">0</span></div>
           <div class="slot" id="slotMN"></div>
           <div class="dropHint">Suelta para <b>Manager</b></div>
         </div>
-
-        <div class="staffPane staffZone" data-zone="GR">
+        <div class="staffZone" data-zone="GR">
           <div class="zoneTitle"><b>Gerente</b><span class="count" id="countGR">0</span></div>
           <div class="slot" id="slotGR"></div>
           <div class="dropHint">Suelta para <b>Gerente</b></div>
         </div>
       </div>
+      </div>
     </section>
-
 
     <!-- Right: Editor -->
     <aside class="panel" id="pageEditor">
@@ -1495,9 +1498,65 @@ document.addEventListener("keydown", (ev)=>{
     }
 
 
-    window.addEventListener("DOMContentLoaded", ()=>{
+    
+    // =========================
+    // Pitch/Staff view toggle (mobile)
+    // =========================
+    const PITCH_VIEW_KEY = "go2_pitch_view";
+    function isMobileLayout(){
+      return window.matchMedia("(max-width: 860px)").matches;
+    }
+    function setPitchView(view, silent=false){
+      const vp = document.getElementById("viewPitch");
+      const vs = document.getElementById("viewStaff");
+      const bP = document.getElementById("btnViewPitch");
+      const bS = document.getElementById("btnViewStaff");
+      if(!vp || !vs || !bP || !bS) return;
+
+      if(!isMobileLayout()){
+        // Desktop: always show both
+        vp.style.display = "";
+        vs.style.display = "";
+        return;
+      }
+
+      const showStaff = view === "staff";
+      vp.style.display = showStaff ? "none" : "";
+      vs.style.display = showStaff ? "" : "none";
+
+      bP.classList.toggle("on", !showStaff);
+      bS.classList.toggle("on", showStaff);
+      bP.setAttribute("aria-selected", String(!showStaff));
+      bS.setAttribute("aria-selected", String(showStaff));
+
+      if(!silent){
+        try{ localStorage.setItem(PITCH_VIEW_KEY, showStaff ? "staff" : "pitch"); }catch(_){}
+      }
+    }
+    function setupPitchTabs(){
+      const bP = document.getElementById("btnViewPitch");
+      const bS = document.getElementById("btnViewStaff");
+      if(!bP || !bS) return;
+
+      bP.addEventListener("click", ()=> setPitchView("pitch"));
+      bS.addEventListener("click", ()=> setPitchView("staff"));
+
+      // restore
+      let saved = "pitch";
+      try{ saved = localStorage.getItem(PITCH_VIEW_KEY) || "pitch"; }catch(_){}
+      setPitchView(saved === "staff" ? "staff" : "pitch", true);
+
+      // keep consistent on rotate/resizes
+      window.addEventListener("resize", ()=>{
+        let current = "pitch";
+        try{ current = localStorage.getItem(PITCH_VIEW_KEY) || "pitch"; }catch(_){}
+        setPitchView(current === "staff" ? "staff" : "pitch", true);
+      });
+    }
+window.addEventListener("DOMContentLoaded", ()=>{
       setupZones();
       setupUI();
+      setupPitchTabs();
       setupTouchDrag();
 
       // Mobile app navigation (tabs)
