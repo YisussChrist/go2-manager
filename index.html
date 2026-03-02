@@ -481,7 +481,15 @@
       .pitchArea{ min-height: 420px; }
     }
 
-</style>
+
+    /* Touch drag helper (iOS Safari) */
+    @media (hover:none) and (pointer:coarse){
+      .card, .mini{ touch-action:none; }
+    }
+
+      body.dragging{ overscroll-behavior:none; }
+
+  </style>
 </head>
 <body>
   <div class="app">
@@ -1113,6 +1121,8 @@
       sw.setAttribute("aria-checked", String(on));
       $("hintPill").textContent = lockMoves ? "Arrastrar: OFF" : "Arrastrar: ON";
       if(!silent) toast(on ? "Arrastre bloqueado" : "Arrastre activado");
+      const hp = $("hintPill");
+      if(hp) hp.textContent = on ? "Arrastrar: OFF" : "Arrastrar: ON";
       render();
     }
 
@@ -1198,7 +1208,17 @@
         }
       });
 
-      document.addEventListener("keydown", (ev)=>{
+      
+      // Quick toggle for drag on mobile: tap the "Arrastrar" pill
+      const hp = $("hintPill");
+      if(hp){
+        hp.style.cursor = "pointer";
+        hp.addEventListener("click", ()=>{
+          setLock(!lockMoves);
+          hp.textContent = lockMoves ? "Arrastrar: OFF" : "Arrastrar: ON";
+        });
+      }
+document.addEventListener("keydown", (ev)=>{
         const isMac = navigator.platform.toUpperCase().includes("MAC");
         if((isMac ? ev.metaKey : ev.ctrlKey) && ev.key.toLowerCase() === "s"){
           ev.preventDefault();
@@ -1264,20 +1284,179 @@
       window.addEventListener("orientationchange", ()=>apply(start));
     }
 
+    
+    // =========================
+    // Touch drag fallback (iOS Safari)
+    // =========================
+    let touchDrag = {
+      active:false,
+      id:null,
+      ghost:null,
+      lastZoneEl:null,
+      pointerId:null
+    };
+
+    function makeGhost(label){
+      const g = document.createElement("div");
+      g.style.position = "fixed";
+      g.style.left = "0px";
+      g.style.top = "0px";
+      g.style.zIndex = "9999";
+      g.style.transform = "translate(-9999px,-9999px)";
+      g.style.pointerEvents = "none";
+      g.style.padding = "10px 12px";
+      g.style.borderRadius = "14px";
+      g.style.border = "1px solid rgba(255,255,255,.18)";
+      g.style.background = "rgba(0,0,0,.55)";
+      g.style.backdropFilter = "blur(10px)";
+      g.style.webkitBackdropFilter = "blur(10px)";
+      g.style.boxShadow = "0 14px 40px rgba(0,0,0,.45)";
+      g.style.fontWeight = "900";
+      g.style.fontSize = "12px";
+      g.style.maxWidth = "70vw";
+      g.style.whiteSpace = "nowrap";
+      g.style.overflow = "hidden";
+      g.style.textOverflow = "ellipsis";
+      g.textContent = label || "Arrastrando…";
+      document.body.appendChild(g);
+      return g;
+    }
+
+    function clearZoneHighlight(){
+      if(touchDrag.lastZoneEl){
+        touchDrag.lastZoneEl.classList.remove("dragover");
+        touchDrag.lastZoneEl = null;
+      }
+    }
+
+    function touchStartFrom(el, ev){
+      if(lockMoves) return;
+      const id = el?.dataset?.id;
+      if(!id) return;
+
+      const p = players.find(x=>x.id===id);
+      touchDrag.active = true;
+      touchDrag.id = id;
+
+      // Capture pointer if available
+      if(ev.pointerId != null){
+        touchDrag.pointerId = ev.pointerId;
+        try{ el.setPointerCapture(ev.pointerId); }catch(_){}
+      }
+
+      // Create ghost
+      if(touchDrag.ghost) touchDrag.ghost.remove();
+      touchDrag.ghost = makeGhost(p?.name || "Arrastrando…");
+
+      // Prevent page from scrolling while dragging
+      ev.preventDefault();
+      document.body.classList.add("dragging");
+    }
+
+    function touchMove(ev){
+      if(!touchDrag.active) return;
+
+      const x = ev.clientX ?? (ev.touches && ev.touches[0]?.clientX);
+      const y = ev.clientY ?? (ev.touches && ev.touches[0]?.clientY);
+      if(x == null || y == null) return;
+
+      // Move ghost
+      if(touchDrag.ghost){
+        touchDrag.ghost.style.transform = `translate(${x + 12}px, ${y + 12}px)`;
+      }
+
+      // Highlight zone under pointer
+      const el = document.elementFromPoint(x, y);
+      const zoneEl = el ? el.closest("[data-zone]") : null;
+
+      if(zoneEl !== touchDrag.lastZoneEl){
+        clearZoneHighlight();
+        if(zoneEl){
+          zoneEl.classList.add("dragover");
+          touchDrag.lastZoneEl = zoneEl;
+        }
+      }
+
+      ev.preventDefault();
+    }
+
+    function touchEnd(ev){
+      if(!touchDrag.active) return;
+
+      const x = ev.clientX ?? (ev.changedTouches && ev.changedTouches[0]?.clientX);
+      const y = ev.clientY ?? (ev.changedTouches && ev.changedTouches[0]?.clientY);
+
+      let dropped = false;
+      if(x != null && y != null){
+        const el = document.elementFromPoint(x, y);
+        const zoneEl = el ? el.closest("[data-zone]") : null;
+        const zone = zoneEl?.dataset?.zone;
+
+        if(zone){
+          setZone(touchDrag.id, zone);
+          dropped = true;
+        }
+      }
+
+      clearZoneHighlight();
+
+      if(touchDrag.ghost){
+        touchDrag.ghost.remove();
+        touchDrag.ghost = null;
+      }
+
+      const id = touchDrag.id;
+      touchDrag.active = false;
+      touchDrag.id = null;
+      touchDrag.pointerId = null;
+      document.body.classList.remove("dragging");
+
+      if(dropped){
+        render();
+        toast(`Asignado: ${zoneLabel(players.find(p=>p.id===id)?.zone)}`);
+      }
+    }
+
+    function setupTouchDrag(){
+      // Use Pointer Events when available; fallback to Touch Events
+      const usePointer = "PointerEvent" in window;
+
+      // Start on roster cards / minis (event delegation)
+      document.addEventListener(usePointer ? "pointerdown" : "touchstart", (ev)=>{
+        // Only primary touch/pen
+        if(usePointer){
+          if(ev.pointerType && ev.pointerType !== "touch" && ev.pointerType !== "pen") return;
+          if(ev.button != null && ev.button !== 0) return;
+        }
+
+        const target = ev.target;
+        const draggableEl = target?.closest?.(".card, .mini");
+        if(!draggableEl) return;
+
+        // If they tapped an action button, don't start drag
+        if(target.closest(".iconBtn")) return;
+
+        // If the element isn't marked with an id, ignore
+        if(!draggableEl.dataset.id) return;
+
+        // Only apply touch drag on coarse pointer devices (phones/tablets)
+        // (Still works on desktop touchscreens)
+        touchStartFrom(draggableEl, ev);
+      }, {passive:false});
+
+      document.addEventListener(usePointer ? "pointermove" : "touchmove", touchMove, {passive:false});
+      document.addEventListener(usePointer ? "pointerup" : "touchend", touchEnd, {passive:false});
+      document.addEventListener(usePointer ? "pointercancel" : "touchcancel", touchEnd, {passive:false});
+    }
+
+
     window.addEventListener("DOMContentLoaded", ()=>{
       setupZones();
       setupUI();
+      setupTouchDrag();
 
       // Mobile app navigation (tabs)
       setupMobileTabs();
-
-      // Mobile/touch: drag & drop is unreliable. Default to locked moves (you can toggle it).
-      try{
-        const isTouch = ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
-        const isSmall = window.matchMedia && window.matchMedia("(max-width: 720px)").matches;
-        if(isTouch || isSmall) setLock(true, true);
-      }catch(_){ }
-
       loadLS();
     });
   </script>
